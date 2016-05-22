@@ -7,6 +7,8 @@ Source tools is the conversion to an open raw data format like
 For Bruker instruments, one option is to use the CompassXport
 command line tool available from the vendor. For licensing reasons,
 we can not provide all files required to build this Docker image.
+(The LICENSE file here only refers to the Dockerfile and build instructions,
+not any files provided by Bruker)
 
 Please head over to
 https://www.bruker.com/service/support-upgrades/software-downloads/mass-spectrometry.html
