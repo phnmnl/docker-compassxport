@@ -1,64 +1,99 @@
-FROM suchja/wine:dev
+FROM i386/debian:stretch-backports
 
-MAINTAINER PhenoMeNal-H2020 Project ( phenomenal-h2020-users@googlegroups.com )
+################################################################################
+### set metadata
+ENV TOOL_NAME=CompassXport
+ENV TOOL_VERSION=3.0.9.2
+ENV CONTAINER_VERSION=0.2
+ENV CONTAINER_GITHUB=https://github.com/phnmnl/container-compassxport
 
-# Install CompassXport
-# https://www.bruker.com/de/service/support-upgrades/software-downloads/mass-spectrometry.html
-COPY CompassXport_3.0.9.2_Setup.exe /tmp
+LABEL version=0.2
+LABEL software.version=3.0.9.2
+LABEL software=CompassXport
+LABEL base.image="i386/debian:stretch-backports"
+LABEL description="Convert Bruker LC/MS files to mzML."
+LABEL website=https://github.com/phnmnl/container-compassxport
+LABEL documentation=https://github.com/phnmnl/container-compassxport
+LABEL license=https://github.com/phnmnl/container-compassxport
+LABEL tags="Metabolomics"
 
-# unfortunately we later need to wait on wineserver.
-# Thus a small script for waiting is supplied.
-USER root
-COPY waitonprocess.sh /scripts/
-RUN chmod +x /scripts/waitonprocess.sh
+# we need wget, bzip2, wine from winehq, 
+# xvfb to fake X11 for winetricks during installation,
+# and winbind because wine complains about missing 
+# unrar from non-free is for the CompassXtract self-extracting archive 
+RUN sed -i -e 's/main/main non-free/g' /etc/apt/sources.list
 
-## Freshen package index
-RUN apt-get update
+RUN apt-get update && \
+    apt-get -y install wget gnupg && \
+    echo "deb http://dl.winehq.org/wine-builds/debian/ stretch main" >> \
+      /etc/apt/sources.list.d/winehq.list && \
+    wget http://dl.winehq.org/wine-builds/Release.key -qO- | apt-key add - && \
+    apt-get update && \
+    apt-get -y --install-recommends --allow-unauthenticated install \
+      bzip2 unzip curl \
+      winehq-devel \
+      winbind \
+      xvfb \
+      cabextract \
+      unrar \
+      && \
+    apt-get -y clean && \
+    rm -rf \
+      /var/lib/apt/lists/* \
+      /usr/share/doc \
+      /usr/share/doc-base \
+      /usr/share/man \
+      /usr/share/locale \
+      && \
+    wget https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks \
+      -O /usr/local/bin/winetricks && chmod +x /usr/local/bin/winetricks
 
-## Get dummy X11 server
-RUN apt-get install -y xvfb winbind cabextract
-
-# You might need a proxy:
-# ENV http_proxy http://www-cache.ipb-halle.de:3128
-
-# WINE does not like running as root
-USER xclient
-
-# get at least error information from wine
+# Create a 32bit wineprefix 
+ENV WINEARCH win32
 ENV WINEDEBUG -all,err+all
+ENV DISPLAY :0
 
-# Install Visual Runtime
-RUN wine wineboot --init \
-		&& /scripts/waitonprocess.sh wineserver \
-		&& /usr/bin/xvfb-run winetricks --unattended vcrun2008 \
-		&& /scripts/waitonprocess.sh wineserver
+# To be singularity friendly, avoid installing anything to /root
+RUN mkdir /wineprefix/
+ENV WINEPREFIX /wineprefix
+WORKDIR /wineprefix
 
-# Install Visual Runtime
-RUN wine wineboot --init \
-		&& /scripts/waitonprocess.sh wineserver \
-		&& /usr/bin/xvfb-run winetricks --unattended msxml3 \
-		&& /scripts/waitonprocess.sh wineserver
+## Create non-root user
+RUN useradd -ms /bin/bash wineuser
+RUN chown -R wineuser /wineprefix
 
-# Install .NET Framework 3.5sp1
-RUN wine wineboot --init \
-		&& /scripts/waitonprocess.sh wineserver \
-		&& /usr/bin/xvfb-run winetricks --unattended dotnet35sp1 \
-		&& /scripts/waitonprocess.sh wineserver
+# wineserver needs to shut down properly, so have a script to wait for it
+ADD waitonprocess.sh /wineprefix/waitonprocess.sh
+RUN chmod +x /wineprefix/waitonprocess.sh
 
-# Install .NET Framework 4.0
-RUN wine wineboot --init \
-		&& /scripts/waitonprocess.sh wineserver \
-		&& /usr/bin/xvfb-run winetricks --unattended dotnet40 dotnet_verifier \
-		&& /scripts/waitonprocess.sh wineserver
+USER wineuser
+WORKDIR /home/wineuser
+
+
+# Install windows dependencies
+RUN winetricks -q win7 && xvfb-run winetricks -q vcrun2008 vcrun2012 corefonts && xvfb-run winetricks -q dotnet452 && /wineprefix/waitonprocess.sh wineserver
+
+##
+## Now the Bruker libraries
+##
 
 # Install CompassXport
+COPY CompassXport_3.0.9.2_Setup.exe /tmp
 RUN wine wineboot --init \
-		&& /scripts/waitonprocess.sh wineserver \
+		&& /wineprefix/waitonprocess.sh wineserver \
 		&& /usr/bin/xvfb-run wine "/tmp/CompassXport_3.0.9.2_Setup.exe" /S /v/qn \
-		&& /scripts/waitonprocess.sh wineserver
+		&& /wineprefix/waitonprocess.sh wineserver
 
+WORKDIR /wineprefix
 # Unless copied, this DLL will not be found by CompassXport.exe
-RUN cp ".wine/drive_c/windows/winsxs/x86_Microsoft.VC90.MFC_1fc8b3b9a1e18e3b_9.0.30729.6161_x-ww_028bc148/mfc90.dll" "/home/xclient/.wine/drive_c/Program Files/Bruker Daltonik/CompassXport/"
+RUN cp "/wineprefix/drive_c/windows/winsxs/x86_Microsoft.VC90.MFC_1fc8b3b9a1e18e3b_9.0.30729.6161_x-ww_028bc148/mfc90.dll" "/wineprefix/drive_c/Program Files/Bruker Daltonik/CompassXport/"
 
 WORKDIR /data
-ENTRYPOINT [ "wine", "/home/xclient/.wine/drive_c/Program Files/Bruker Daltonik/CompassXport/CompassXport.exe" ]
+ENTRYPOINT [ "wine", "/wineprefix/drive_c/Program Files/Bruker Daltonik/CompassXport/CompassXport.exe" ]
+
+
+
+
+
+#
+# ENTRYPOINT ["/usr/bin/convert2cdf.sh"]
