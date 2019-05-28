@@ -1,11 +1,20 @@
 #!/bin/sh
 
 GLOBALWINEPREFIX=/wineprefix
-MYWINEPREFIX=/mywineprefix/my
+MYWINEPREFIX=/mywineprefix/
 
-mkdir -p "$MYWINEPREFIX"
-cp -v "$GLOBALWINEPREFIX"/*.reg "$MYWINEPREFIX"
-cp -avx "$GLOBALWINEPREFIX/dosdevices" "$MYWINEPREFIX"
+if [ ! -L "$MYWINEPREFIX"/dosdevices/z: ] ; then 
+  mkdir -p "$MYWINEPREFIX"/dosdevices
+  cp "$GLOBALWINEPREFIX"/*.reg "$MYWINEPREFIX"
+
+  mkdir -p "$MYWINEPREFIX/dosdevices/c:/users/"
+
+  ln -sf "$GLOBALWINEPREFIX/drive_c/Program Files" "$MYWINEPREFIX/dosdevices/c:/"
+  ln -sf "$GLOBALWINEPREFIX/drive_c/ProgramData" "$MYWINEPREFIX/dosdevices/c:/"
+  ln -sf "$GLOBALWINEPREFIX/drive_c/windows" "$MYWINEPREFIX/dosdevices/c:/"
+
+  ln -sf "/" "$MYWINEPREFIX/dosdevices/z:"
+fi 
 
 export WINEPREFIX=$MYWINEPREFIX
 wine "$@"
