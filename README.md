@@ -27,6 +27,7 @@ After building the image, the conversion can be started with e.g.
 `docker run -v $PWD:/data phnmnl/compassxport:3092-0.1 -multi /data/neg-MM8_1-A,1_01_376.d/ -o
 /data`
 
+`docker run -v $PWD:/data --rm -it sneumann/compassxport:3092-0.2 -multi z:/data/neg-MM8_1-A,1_01_376.d -mode 2`
 
 Excerpt from the ReleaseNotes:
 
