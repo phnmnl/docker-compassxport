@@ -66,6 +66,9 @@ RUN chown -R wineuser /wineprefix
 ADD waitonprocess.sh /wineprefix/waitonprocess.sh
 RUN chmod +x /wineprefix/waitonprocess.sh
 
+ADD mywine /usr/local/bin/
+RUN chmod +x /usr/local/bin/mywine
+
 USER wineuser
 WORKDIR /home/wineuser
 
