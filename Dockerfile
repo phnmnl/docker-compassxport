@@ -74,7 +74,7 @@ WORKDIR /home/wineuser
 
 
 # Install windows dependencies
-RUN winetricks -q win7 && xvfb-run winetricks -q vcrun2008 vcrun2012 corefonts && xvfb-run winetricks -q dotnet452 && /wineprefix/waitonprocess.sh wineserver
+RUN winetricks -q win7 && xvfb-run --auto-servernum winetricks -q vcrun2008 vcrun2012 corefonts && xvfb-run --auto-servernum winetricks -q dotnet452 && /wineprefix/waitonprocess.sh wineserver
 
 ##
 ## Now the Bruker libraries
