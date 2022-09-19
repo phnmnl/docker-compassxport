@@ -14,7 +14,7 @@ Please head over to
 https://www.bruker.com/service/support-upgrades/software-downloads/mass-spectrometry.html
 to obtain the required CompassXport_3.0.9.2_Setup.exe installer, and
 place it into this directory prior to running e.g.  `docker build -t
-phnmnl/compassxport:3092-0.1 .`. *Update 2022*: Seems that CompassXport 
+phnmnl/compassxport:3092-0.1 .`. **Update 2022**: Seems that CompassXport 
 is not available from the Bruker website anymore. In case you find 
 that file somewhere, make sure it was not maliciously modified. 
 The checksum `sha256sum CompassXport_3.0.9.2_Setup.exe` should be 
