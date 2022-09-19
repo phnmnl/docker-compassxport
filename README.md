@@ -14,7 +14,11 @@ Please head over to
 https://www.bruker.com/service/support-upgrades/software-downloads/mass-spectrometry.html
 to obtain the required CompassXport_3.0.9.2_Setup.exe installer, and
 place it into this directory prior to running e.g.  `docker build -t
-phnmnl/compassxport:3092-0.1 .`
+phnmnl/compassxport:3092-0.1 .`. *Update 2022*: Seems that CompassXport 
+is not available from the Bruker website anymore. In case you find 
+that file somewhere, make sure it was not maliciously modified. 
+The checksum `sha256sum CompassXport_3.0.9.2_Setup.exe` should be 
+`bc23a53f477548f45d7dfe3e73bb93490318a1e79f803c2e80a2d58d6ba2888c`.
 
 Please also take note that CompassXport is a tool unsupported by
 Bruker. You are welcome to use the product, but Bruker Daltonik
@@ -29,7 +33,7 @@ After building the image, the conversion can be started with e.g.
 
 `docker run -v $PWD:/data --rm -it sneumann/compassxport:3092-0.2 -multi z:/data/neg-MM8_1-A,1_01_376.d -mode 2`
 
-Excerpt from the ReleaseNotes:
+Excerpt from the Bruker ReleaseNotes:
 
 ````
 CompassXport is not Freeware. After unpacking you will find the
